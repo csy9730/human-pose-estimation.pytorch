@@ -105,3 +105,8 @@ venv.bak/
 /output
 /models
 /log
+
+.vscode/
+weights/
+bak/
+tmp/

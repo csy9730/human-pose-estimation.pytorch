@@ -77,6 +77,7 @@ class JointsDataset(Dataset):
 
         if data_numpy is None:
             logger.error('=> fail to read {}'.format(image_file))
+            return self.__getitem__(1)
             raise ValueError('Fail to read {}'.format(image_file))
 
         joints = db_rec['joints_3d']
@@ -171,6 +172,10 @@ class JointsDataset(Dataset):
         :param joints:  [num_joints, 3]
         :param joints_vis: [num_joints, 3]
         :return: target, target_weight(1: visible, 0: invisible)
+
+        target_weight 的值和joints_vis[:,0] 基本一致。
+        基于点生成heatmap。
+            如果关键点的sigma区域超出了heatmap区域，该点无效，对应的权重（target_weight）置零。
         '''
         target_weight = np.ones((self.num_joints, 1), dtype=np.float32)
         target_weight[:, 0] = joints_vis[:, 0]

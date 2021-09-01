@@ -6,7 +6,7 @@
 
 import numpy as np
 cimport numpy as np
-
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 assert sizeof(int) == sizeof(np.int32_t)
 
 cdef extern from "gpu_nms.hpp":
@@ -21,8 +21,9 @@ def gpu_nms(np.ndarray[np.float32_t, ndim=2] dets, np.float thresh,
         keep = np.zeros(boxes_num, dtype=np.int32)
     cdef np.ndarray[np.float32_t, ndim=1] \
         scores = dets[:, 4]
-    cdef np.ndarray[np.int32_t, ndim=1] \
-        order = scores.argsort()[::-1].astype(np.int32)
+    # cdef np.ndarray[np.int32_t, ndim=1] \
+    cdef np.ndarray[np.int64_t, ndim=1] \
+        order = scores.argsort()[::-1].astype(np.int32)  
     cdef np.ndarray[np.float32_t, ndim=2] \
         sorted_dets = dets[order, :]
     _nms(&keep[0], &num_out, &sorted_dets[0, 0], boxes_num, boxes_dim, thresh, device_id)
