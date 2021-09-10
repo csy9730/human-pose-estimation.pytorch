@@ -38,7 +38,7 @@ import dataset
 import models
 
 
-def parse_args():
+def parse_args(cmds=None):
     parser = argparse.ArgumentParser(description='Train keypoints network')
     # general
     parser.add_argument('--cfg',
@@ -46,7 +46,7 @@ def parse_args():
                         required=True,
                         type=str)
 
-    args, rest = parser.parse_known_args()
+    args, rest = parser.parse_known_args(cmds)
     # update config
     update_config(args.cfg)
 
@@ -62,7 +62,7 @@ def parse_args():
                         help='num of dataloader workers',
                         type=int)
 
-    args = parser.parse_args()
+    args = parser.parse_args(cmds)
 
     return args
 
@@ -74,8 +74,8 @@ def reset_config(config, args):
         config.WORKERS = args.workers
 
 
-def main():
-    args = parse_args()
+def main(cmds=None):
+    args = parse_args(cmds)
     reset_config(config, args)
 
     logger, final_output_dir, tb_log_dir = create_logger(
@@ -203,4 +203,5 @@ def main():
 
 
 if __name__ == '__main__':
+    cmds = ['--cfg', 'experiments/face300w/256x256_d256x3_adam_lr1e-3_a.yaml']
     main()

@@ -30,59 +30,6 @@ def timeit(func):
     return wrapper
 
 
-class PosenetPredictor(object):
-    def __init__(self):
-        # self.loadModel(model_file)
-        
-        self.width = 192
-        self.height = 256
-        self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)*255
-        self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32)*255
-        self.output_size = [self.height // 4, self.width//4]
-
-    def preprocess(self, img):
-        if img.shape[0:2] != (self.height, self.width):
-            img = cv2.resize(img, (self.width, self.height))
-
-        input_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-        #print("input_image.shape:", input_image.shape)
-        input_image = input_image.astype(np.float32)
-        input_image = (input_image - self.mean) / self.std
-        input_image = input_image.transpose([2, 0, 1])
-
-        input_tensor = torch.tensor(input_image)
-        input_tensor = input_tensor.unsqueeze(0)
-        #print("input_tensor.shape", input_tensor.shape)
-        return input_tensor
-
-    def postProcess(self, score_map):
-        if not isinstance(score_map, torch.Tensor):
-            print("trans to tensor")
-            score_map = torch.Tensor(score_map)
-        from core.inference import get_max_preds
-        # print(score_map.shape)
-        kpts, _ = get_max_preds(score_map.numpy())
-        kpts = kpts.squeeze(0) * 4
-        return kpts
-
-    def farward(self, x):
-        with torch.no_grad():
-            ret = self.model(x)
-            # print(ret.shape, "ret shape")
-            return ret.data.cpu()
-    
-    @timeit
-    def predict(self, x):
-        input_tensor = self.preprocess(x)
-        score_map = self.farward(input_tensor)
-        kpts = self.postProcess(score_map)
-        return kpts
-
-    def draw(self, img, preds):
-        return draw_pts(img, preds)
-
-
 def draw_pts(img, kpts):
     img2 = img.copy()
     for k in kpts:

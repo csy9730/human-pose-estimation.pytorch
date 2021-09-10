@@ -16,7 +16,7 @@ import torch.nn as nn
 from collections import OrderedDict
 
 
-BN_MOMENTUM = 0.1
+BN_MOMENTUM = 0.9 # 0.1
 logger = logging.getLogger(__name__)
 
 

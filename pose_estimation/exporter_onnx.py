@@ -15,42 +15,35 @@ import pprint
 import time
 
 import torch
-import torch.nn.parallel
+
 import torch.backends.cudnn as cudnn
-import torch.optim
-import torch.utils.data
-import torch.utils.data.distributed
-import torchvision.transforms as transforms
+import numpy as np
 import cv2
 
 import _init_paths
 from core.config import config
 from core.config import update_config
-from core.config import update_dir
-from core.loss import JointsMSELoss
-from core.function import validate
 from utils.utils import create_logger
-import numpy as np
-
-import dataset
-import models
 from cameraViewer import CameraViewer
 
-def export(model, output, output_type='onnx'):
+def export(model, output, output_type='onnx', shape=(1,3,256,192)):
     from torch.autograd import Variable
 
     model = model.eval()
-    x = Variable(torch.randn(1, 3, 256, 192), requires_grad=False)
+
+    x = Variable(torch.randn(*shape), requires_grad=False)
     with torch.no_grad():
         if output_type == 'onnx':
             torch.onnx.export(model, x, output, verbose=True, training=False,
-                do_constant_folding=True)
+                do_constant_folding=True, opset_version=7)
         elif output_type == 'torchscript':
             x = x.float()
             assert isinstance(model, torch.nn.Module)
             traced_script_module = torch.jit.trace(model, x)
             # traced_script_module = torch.jit.trace_module(model, x)
             traced_script_module.save(output)
+        else:
+            print("not found", output_type)
 
 def parse_args(cmds=None):
     parser = argparse.ArgumentParser(description='Train keypoints network')
@@ -65,6 +58,11 @@ def parse_args(cmds=None):
     update_config(args.cfg)
 
     # training
+    parser.add_argument('--shape-list', type=int, nargs='*', 
+                        help='shape list, such as 1 3 256 192')
+    parser.add_argument('--output', '-o', default='out.onnx',
+                        help='output image path')                   
+
     parser.add_argument('--frequent',
                         help='frequency of logging',
                         default=config.PRINT_FREQ,
@@ -116,6 +114,21 @@ def reset_config(config, args):
         config.TEST.MODEL_FILE = args.model_file
     if args.coco_bbox_file:
         config.TEST.COCO_BBOX_FILE = args.coco_bbox_file
+    
+def modelFactory(model_path, config):
+    from models.pose_resnet import get_pose_net
+    model = get_pose_net(config, is_train=False)
+
+    ckpt = torch.load(model_path)
+
+    model_dict = {}
+    for k,v in ckpt.items():
+        if "module" in k:
+            k = k[7:]# .lstrip('module\\.')
+        model_dict[k] = v
+        
+    model.load_state_dict(model_dict)
+    return model
 
 def main(cmds=None):
     args = parse_args(cmds)
@@ -132,23 +145,9 @@ def main(cmds=None):
     torch.backends.cudnn.deterministic = config.CUDNN.DETERMINISTIC
     torch.backends.cudnn.enabled = config.CUDNN.ENABLED
 
-    model = eval('models.'+config.MODEL.NAME+'.get_pose_net')(
-        config, is_train=False
-    )
+    model = modelFactory(config.TEST.MODEL_FILE, config)
 
-    if config.TEST.MODEL_FILE:
-        logger.info('=> loading model from {}'.format(config.TEST.MODEL_FILE))
-        ckpt = torch.load(config.TEST.MODEL_FILE)
-
-        model_dict = {}
-        for k,v in ckpt.items():
-            if "module" in k:
-                k = k[7:]# .lstrip('module\\.')
-            model_dict[k] = v
-            
-        model.load_state_dict(model_dict)
-
-    export(model, 'coco_256x192.onnx')
+    export(model, args.output, shape=args.shape_list)
     # export(model, 'abc.torchscript', 'torchscript')
 
 
@@ -156,6 +155,10 @@ if __name__ == '__main__':
     # cmds = ['--cfg', r'experiments\mpii\resnet50\256x256_d256x3_adam_lr1e-3.yaml', 
     # '--model-file', r'models/pytorch/pose_mpii/pose_resnet_50_256x256.pth.tar']
     cmds = ['--cfg', r'experiments\coco\resnet50\256x192_d256x3_adam_lr1e-3.yaml', 
-    '--model-file', r'output\coco\pose_resnet_50\256x192_d256x3_adam_lr1e-3\model_best.pth.tar']
-    
+    '--model-file', r'output\coco\pose_resnet_50\256x192_d256x3_adam_lr1e-3\model_best.pth.tar',
+    '-o', 'weights/coco_256x192.onnx']
+
+    cmds = ['--cfg', r'experiments\face300w\256x256_d256x3_adam_lr1e-3_a.yaml', 
+    '--model-file', r'output\CsvKptDataset\pose_resnet_50\256x256_d256x3_adam_lr1e-3_a\model_best.pth.tar',
+    '--shape-list', '1', '3', '256', '256', '-o', 'weights/face300_256x256f.onnx']
     main(cmds)

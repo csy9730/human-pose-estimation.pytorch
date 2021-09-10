@@ -199,7 +199,7 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
             else:
                 writer.add_scalars('valid', dict(name_values), global_steps)
             writer_dict['valid_global_steps'] = global_steps + 1
-
+    return acc.avg ###
     return perf_indicator
 
 

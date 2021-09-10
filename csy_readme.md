@@ -70,7 +70,7 @@ class COCODataset(JointsDataset):
 			joints_3d_vis[ipt, 2] = 0
 ``` 
 `_load_coco_keypoint_annotation_kernal()`, 该代码有些冗余，强行把2d点转换成3d点，引入了joints_3d_vis[3]来描述一维的可见性。可能是为了和openpose保持一致吧。
-
+joints_3d_vis.shape =[num_joints, 3]
 
 #### postprocess
 

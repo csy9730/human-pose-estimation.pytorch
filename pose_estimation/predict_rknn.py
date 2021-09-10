@@ -6,43 +6,14 @@ import numpy as np
 import cv2
 from rknn.api import RKNN
 import torch
-from zalaiConvert.farward.cameraViewer import CameraViewer  
-from zalaiConvert.farward.farward_utils import activateEnv
-from zalaiConvert.farward.farward_utils import getRknn
-import _init_paths
-from _predictor import PosenetPredictor, predictWrap
+
+from zalaiConvert.utils.cameraViewer import CameraViewer  
+from zalaiConvert.utils.farward_utils import activateEnv, predictWrap, draw_pts, timeit
+from zalaiConvert.utils.rknn_utils import getRknn
+from zalaiConvert.utils.keypoint_utils import get_max_preds
+from _predictor import timeit, draw_pts
+
 activateEnv()
-
-
-class RknnPredictor(PosenetPredictor):
-    def __init__(self, rknn):
-        super(RknnPredictor, self).__init__()
-        self.rknn = rknn
-        
-    def preprocess(self, img, with_normalize=None, hwc_chw=None, **kwargs):
-        if img.shape[0:2] != (self.height, self.width):
-            img = cv2.resize(img, (self.width, self.height))
-
-        input_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        input_image = input_image.astype(np.float32)
-
-        return [input_image]
-
-    def farward(self, x):
-        outputs = self.rknn.inference(inputs=x)
-        return outputs[0]
-
-    # @decorator_retval([])  
-
-    # @timeit  
-    # def predict(self, img, args):
-    #     img2 = self.preprocess(img)
-    #     score_map = self.farward(img2)
-    #     kpts = self.postProcess(score_map)
-    #     return kpts
-    
-    # def __del__(self):
-    #     self.rknn.release()
 
 
 def parse_args(cmds=None):
@@ -70,6 +41,55 @@ def parse_args(cmds=None):
     parser.add_argument('--show-img', action='store_true', help='show image')
     parser.add_argument('--mix-scale', type=float, help='segment task params: mix scale')
     return parser.parse_args(cmds)
+
+class RknnPredictor():
+    def __init__(self, rknn):
+        super(RknnPredictor, self).__init__()
+        self.rknn = rknn
+
+        self.width = 192
+        self.height = 256
+        self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)*255
+        self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32)*255
+        self.output_size = [self.height // 4, self.width//4]
+
+    def preprocess(self, img, with_normalize=None, hwc_chw=None, **kwargs):
+        if img.shape[0:2] != (self.height, self.width):
+            img = cv2.resize(img, (self.width, self.height))
+
+        input_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        input_image = input_image.astype(np.float32)
+
+        return [input_image]
+
+    def farward(self, x):
+        outputs = self.rknn.inference(inputs=x)
+        return outputs[0]
+
+    def postProcess(self, score_map):
+        if not isinstance(score_map, torch.Tensor):
+            print("trans to tensor")
+            score_map = torch.Tensor(score_map)
+
+        # print(score_map.shape)
+        kpts, _ = get_max_preds(score_map.numpy())
+        kpts = kpts.squeeze(0) * 4
+        return kpts
+
+    @timeit
+    def predict(self, x, args=None):
+        input_tensor = self.preprocess(x)
+        score_map = self.farward(input_tensor)
+        kpts = self.postProcess(score_map)
+        return kpts
+
+    def draw(self, img, preds):
+        print(preds)
+        return draw_pts(img, preds)
+
+    # def __del__(self):
+    #     self.rknn.release()
+
 
 
 def predictWrap2(source, model, args):
