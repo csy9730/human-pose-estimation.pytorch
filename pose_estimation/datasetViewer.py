@@ -30,13 +30,6 @@ from dataset import CsvKptDataset
 """   
 COCO_ROOT = r"H:\Dataset\keypoint\coco2017" 
 
-def main():
-    cfg_file = r"experiments\coco\resnet50\256x192_d256x3_adam_lr1e-3_caffe.yaml"
-    # cfg_file = r"experiments\face300w\256x256_d256x3_adam_lr1e-3_a.yaml"
-    update_config(cfg_file)
-    config.TEST.POST_PROCESS = False
-    demo2()
-
 def demo2():
 # Data loading code
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -122,8 +115,8 @@ def demo3():
         image_set=csv_file,
         is_train=True,
         transform=transforms.Compose([
-            transforms.ToTensor(),
-            normalize,
+            # transforms.ToTensor(),
+            # normalize,
         ])
     )
 
@@ -139,12 +132,13 @@ def demo3():
         num_workers=4,
         pin_memory=True
     )
-    for img, tg, tgw, meta in train_loader:
-        print(img.shape, tgw.shape)
-        exit(0)
+    # for img, tg, tgw, meta in train_loader:
+    #     print(img.shape, tgw.shape)
+    #     exit(0)
     for i in range(0,15):
         img, tg, tgw, meta = train_dataset[i]
         # print(img)
+        # img = img.numpy()
         img = img.astype(np.uint8)
         tg = tg.unsqueeze(0)
         coords, maxvals = get_max_preds(tg.numpy())
@@ -163,6 +157,14 @@ def draw_pts(img, kpts):
         y = int(k[1])
         cv2.circle(img2, (x, y), radius=2, thickness=-1, color=(0, 0, 255))
     return img2
+
+def main():
+    cfg_file = r"experiments\coco\resnet50\256x192_d256x3_adam_lr1e-3_caffe.yaml"
+    # cfg_file = r"experiments\face300w\256x256_d256x3_adam_lr1e-3_a.yaml"
+    update_config(cfg_file)
+    config.TEST.POST_PROCESS = False
+    # demo2()
+    demo3() 
 
 if __name__ == "__main__":
     main()

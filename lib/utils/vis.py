@@ -22,7 +22,8 @@ def save_batch_image_with_joints(batch_image, batch_joints, batch_joints_vis,
     '''
     batch_image: [batch_size, channel, height, width]
     batch_joints: [batch_size, num_joints, 3],
-    batch_joints_vis: [batch_size, num_joints, 1],
+    batch_joints_vis: [batch_size, num_joints, 1], 用来标记需要绘制和点。
+
     }
     '''
     grid = torchvision.utils.make_grid(batch_image, nrow, padding, True)

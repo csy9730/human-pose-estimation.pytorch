@@ -39,8 +39,8 @@ class PosenetOnnxPredictor():
 
         self.width = 256 # 256
         self.height = 256
-        self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)*255
-        self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32)*255
+        self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+        self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
         self.output_size = [self.height // 4, self.width//4]
     
     def loadModel(self, f):
@@ -111,5 +111,5 @@ if __name__ == '__main__':
     cmds = ["--model-in", "weights/coco_256x192.onnx", '-i', "data/abc*.jpg", '--input-size', '256', '192']
     # cmds = ["--model-in", "weights\pose_resnet_50_256x256/pose_resnet_50_256x256.onnx", '-i', "data/abc*.jpg"]
 
-    cmds = ["--model-in", r'weights/face300_256x256f.onnx', '-i', 'data/faces/*.png']
-    main(cmds)
+    cmds = ["--model-in", r'weights/face300_256x256.onnx', '-i', 'data/faces/*.png']
+    main()

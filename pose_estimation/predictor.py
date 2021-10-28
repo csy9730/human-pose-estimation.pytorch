@@ -17,12 +17,12 @@ import cv2
 import numpy as np
 
 import _init_paths
-from core.config import config
-from core.config import update_config
-from utils.utils import create_logger
+from lib.core.config import config
+from lib.core.config import update_config
+from lib.utils.utils import create_logger
 import models
 from _predictor import predictWrap, timeit, draw_pts
-
+import torchvision.transforms as transforms
 
 def parse_args(cmds=None):
     parser = argparse.ArgumentParser(description='Train keypoints network')
@@ -94,22 +94,31 @@ class PosresPredictor(object):
     def __init__(self):
         self.width = 256 # 192
         self.height = 256
-        self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)*255
-        self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32)*255
+        self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+        self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
         self.output_size = [self.height // 4, self.width//4]
 
     def preprocess(self, img):
         if img.shape[0:2] != (self.height, self.width):
             img = cv2.resize(img, (self.width, self.height))
 
-        input_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        # input_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        input_image = img
 
         #print("input_image.shape:", input_image.shape)
         input_image = input_image.astype(np.float32)
-        input_image = (input_image - self.mean) / self.std
-        input_image = input_image.transpose([2, 0, 1])
 
-        input_tensor = torch.tensor(input_image)
+        input_image = (input_image /1.0 - self.mean) / self.std
+        input_image = input_image.transpose((2, 0, 1))
+        input_tensor = torch.from_numpy(input_image)
+        
+        # normalize = transforms.Normalize(mean=self.mean, std=self.std)
+        # tranf = transforms.Compose([
+        #     transforms.ToTensor(),
+        #     normalize,
+        # ])
+        # input_tensor = tranf(input_image)
+
         input_tensor = input_tensor.unsqueeze(0)
         #print("input_tensor.shape", input_tensor.shape)
         return input_tensor
@@ -141,18 +150,22 @@ class PosresPredictor(object):
         return draw_pts(img, preds)
 
 def modelFactory(model_path, config):
-    from models.pose_resnet import get_pose_net
+    from lib.models.pose_resnet import get_pose_net
     model = get_pose_net(config, is_train=False)
     if model_path:
         # logger.info('=> loading model from {}'.format(model_path))
         ckpt = torch.load(model_path)
+        if "checkpoint.pth.tar" in model_path:
+            ckpt = ckpt["state_dict"]
 
         model_dict = {}
         for k,v in ckpt.items():
             if "module" in k:
                 k = k[7:]# .lstrip('module\\.')
+            if k in ["epoch", "model", "state_dict", "perf", "optimizer"]:
+                continue
             model_dict[k] = v
-            
+          
         model.load_state_dict(model_dict)
     return model
 
@@ -185,11 +198,7 @@ def main(cmds=None):
 
 
 if __name__ == '__main__':
-    # cmds = ['--cfg', r'experiments\mpii\resnet50\256x256_d256x3_adam_lr1e-3.yaml', 
-    # '--model-file', r'models/pytorch/pose_mpii/pose_resnet_50_256x256.pth.tar']
-    cmds = ['--cfg', r'experiments\coco\resnet50\256x192_d256x3_adam_lr1e-3.yaml', 
-    '--model-file', r'output\coco\pose_resnet_50\256x192_d256x3_adam_lr1e-3\model_best.pth.tar', '-i', r"H:\Dataset\keypoint\lsp\lsp_dataset\images\*.jpg"]
-    cmds = ['--cfg', r'experiments\face300w\256x256_d256x3_adam_lr1e-3_a.yaml', 
-    '--model-file', r'output\CsvKptDataset\pose_resnet_50\256x256_d256x3_adam_lr1e-3_a\model_best.pth.tar' , '-i', r"data/faces/*.png"]
-    
+    cmds = ['--cfg', r'experiments\face300w\256x256_d256x3_adam_lr1e-3_c.yaml', 
+    '--model-file', r'output\CsvKptDataset\pose_resnet_50\256x256_d256x3_adam_lr1e-3_c\checkpoint.pth.tar' , '-i', r"data/faces/*g"]
+
     main(cmds)

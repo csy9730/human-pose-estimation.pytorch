@@ -346,3 +346,40 @@ Traceback (most recent call last):
     default_compiler_so = self.compiler_so
 AttributeError: 'MSVCCompiler' object has no attribute 'compiler_so'
 ```
+
+
+### a bug record
+
+``` python
+def preprocess(self, img):
+    if img.shape[0:2] != (self.height, self.width):
+        img = cv2.resize(img, (self.width, self.height))
+
+    # input_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    input_image = img
+
+    input_image = input_image.astype(np.float32)
+
+    # 以下有两种预处理方法。
+    if 1:
+      P = 1.0 # not 255.0
+      input_image = (input_image /P - self.mean) / self.std
+      input_image = input_image.transpose((2, 0, 1))
+      input_tensor = torch.from_numpy(input_image)
+    else:
+      normalize = transforms.Normalize(mean=self.mean, std=self.std)
+      tranf = transforms.Compose([
+          transforms.ToTensor(),
+          normalize,
+      ])
+      input_tensor = tranf(input_image)
+
+    input_tensor = input_tensor.unsqueeze(0)
+    return input_tensor
+```  
+
+纪一次离奇的预测记录。
+人脸关键点训练任务。一开始使用仓库训练，效果很好，几个epoch，马上就达到了95%。
+结果到了模型导出环节，发现onnx模型效果不行，然后倒回预测环节，发现模型使用`model.train()`，预测效果良好；模型使用`model.eval()`预测效果非常差。 以为是BN层导致的，但是训练的评估函数没有任何问题。
+
+于是从评估函数倒回到预测函数，经过反复比对：转置函数transpose()，归一化函数normalize()，张量转化函数tensor(),bgr2rgb()函数，发现是预处理环节不一致导致的，评估使用训练仓库的基于Tensor的预处理，预测使用numpy的预处理。训练代码中，`transforms.ToTensor()` 函数没有正确生效，没有除以255。导致了直接预测结果错误，经过激活BN层结果又能正确的bug。

@@ -1,4 +1,4 @@
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 # export PYTHONUNBUFFERED="True"
 LOG="./logs/train-face300w_b`date +'%Y-%m-%d-%H-%M-%S'`.log"
 

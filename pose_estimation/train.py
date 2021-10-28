@@ -23,18 +23,18 @@ import torchvision.transforms as transforms
 from tensorboardX import SummaryWriter
 
 import _init_paths
-from core.config import config
-from core.config import update_config
-from core.config import update_dir
-from core.config import get_model_name
-from core.loss import JointsMSELoss
-from core.function import train
-from core.function import validate
-from utils.utils import get_optimizer
-from utils.utils import save_checkpoint
-from utils.utils import create_logger
+from lib.core.config import config
+from lib.core.config import update_config
+from lib.core.config import update_dir
+from lib.core.config import get_model_name
+from lib.core.loss import JointsMSELoss
+from lib.core.function import train
+from lib.core.function import validate
+from lib.utils.utils import get_optimizer
+from lib.utils.utils import save_checkpoint
+from lib.utils.utils import create_logger
 
-import dataset
+
 import models
 
 
@@ -89,7 +89,9 @@ def main(cmds=None):
     torch.backends.cudnn.deterministic = config.CUDNN.DETERMINISTIC
     torch.backends.cudnn.enabled = config.CUDNN.ENABLED
 
-    model = eval('models.'+config.MODEL.NAME+'.get_pose_net')(
+    from lib.models.pose_resnet import get_pose_net, PoseResNet
+    
+    model = get_pose_net(
         config, is_train=True
     )
 
@@ -128,7 +130,11 @@ def main(cmds=None):
     # Data loading code
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
-    train_dataset = eval('dataset.'+config.DATASET.DATASET)(
+    from lib.dataset import mpii, coco, CsvKptDataset
+
+    Datasets = {"coco": coco, "mpii": mpii, "CsvKptDataset":CsvKptDataset}
+
+    train_dataset = Datasets[config.DATASET.DATASET](
         config,
         config.DATASET.ROOT,
         config.DATASET.TRAIN_SET,
@@ -138,7 +144,7 @@ def main(cmds=None):
             normalize,
         ])
     )
-    valid_dataset = eval('dataset.'+config.DATASET.DATASET)(
+    valid_dataset = Datasets[config.DATASET.DATASET](
         config,
         config.DATASET.ROOT,
         config.DATASET.TEST_SET,
@@ -148,7 +154,7 @@ def main(cmds=None):
             normalize,
         ])
     )
-
+    logger.info({"numValid":len(valid_dataset), "numTrain": len(train_dataset)})
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=config.TRAIN.BATCH_SIZE*len(gpus),
@@ -159,7 +165,7 @@ def main(cmds=None):
     valid_loader = torch.utils.data.DataLoader(
         valid_dataset,
         batch_size=config.TEST.BATCH_SIZE*len(gpus),
-        shuffle=False,
+        shuffle=True,
         num_workers=config.WORKERS,
         pin_memory=True
     )
@@ -175,6 +181,7 @@ def main(cmds=None):
 
 
         # evaluate on validation set
+        model.eval()
         perf_indicator = validate(config, valid_loader, valid_dataset, model,
                                   criterion, final_output_dir, tb_log_dir,
                                   writer_dict)
