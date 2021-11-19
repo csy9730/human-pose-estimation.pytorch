@@ -201,4 +201,4 @@ if __name__ == '__main__':
     cmds = ['--cfg', r'experiments\face300w\256x256_d256x3_adam_lr1e-3_c.yaml', 
     '--model-file', r'output\CsvKptDataset\pose_resnet_50\256x256_d256x3_adam_lr1e-3_c\checkpoint.pth.tar' , '-i', r"data/faces/*g"]
 
-    main(cmds)
+    main()

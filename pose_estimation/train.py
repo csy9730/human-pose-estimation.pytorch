@@ -61,7 +61,7 @@ def parse_args(cmds=None):
     parser.add_argument('--workers',
                         help='num of dataloader workers',
                         type=int)
-
+    parser.add_argument('--output', '-o', help='output directory & filename',)
     args = parser.parse_args(cmds)
 
     return args
@@ -77,9 +77,9 @@ def reset_config(config, args):
 def main(cmds=None):
     args = parse_args(cmds)
     reset_config(config, args)
-
+    
     logger, final_output_dir, tb_log_dir = create_logger(
-        config, args.cfg, 'train')
+        config, args.cfg, phase='train', output=args.output,)
 
     logger.info(pprint.pformat(args))
     logger.info(pprint.pformat(config))

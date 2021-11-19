@@ -1,0 +1,5 @@
+../../data/faces/a2.png
+../../data/faces/a3.png
+../../data/faces/a4.png
+../../data/faces/a6.png
+../../data/faces/a7.png

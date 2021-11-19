@@ -72,7 +72,7 @@ class CsvKptDataset(Dataset):
         center = center.numpy()
         pts = self.landmarks_frame.iloc[idx, 0:-5].values
         kpt = pts.astype('float').reshape(-1, 2)
-        data_numpy = np.array(cv2.imread(image_file), dtype=np.float32)
+        data_numpy = cv2.imread(image_file)
 
         joints = kpt # db_rec['joints_3d']
         joints_3d_vis = np.ones((self.num_joints, 3), dtype=np.float)
