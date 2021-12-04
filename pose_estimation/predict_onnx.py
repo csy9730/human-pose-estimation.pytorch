@@ -29,18 +29,19 @@ def parse_args(cmds=None):
     parser.add_argument('--model-in', '-m', dest="model_file", help='model parameters', required=True)
     parser.add_argument('--input','-i',help='input image path')
     parser.add_argument('--input-size', nargs='*', type=int, help='input image size(H, W): 256 192')
+    parser.add_argument('--scale', type=float, default=1, help='')
     args = parser.parse_args(cmds)
     return args
 
 class PosenetOnnxPredictor():
-    def __init__(self, model_file):
+    def __init__(self, model_file, scale=256):
         super(PosenetOnnxPredictor, self).__init__()
         self.loadModel(model_file)
 
         self.width = 256 # 256
         self.height = 256
-        self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
-        self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+        self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)*256
+        self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32)*256
         self.output_size = [self.height // 4, self.width//4]
     
     def loadModel(self, f):
@@ -99,7 +100,7 @@ class PosenetOnnxPredictor():
 def main(cmds=None):
     args = parse_args(cmds)
 
-    model = PosenetOnnxPredictor(args.model_file)
+    model = PosenetOnnxPredictor(args.model_file, scale=args.scale)
     if args.input_size:
         model.height = args.input_size[0]
         model.width = args.input_size[1]

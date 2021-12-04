@@ -28,6 +28,7 @@ def parse_args(cmds=None):
     parser.add_argument('--input-chw', action='store_true', help='model file path')
     parser.add_argument('--with-normalize', action='store_true', help='rknn with normalize')
     parser.add_argument('--hwc-chw', action='store_true', help='image preprocess: from HWC to CHW')
+    parser.add_argument('--input-size', nargs='*', type=int, default=[256,256], help='input image size(H, W): 256 256')
 
     # parser.add_argument('--target', choices=['rk1808', 'rv1126'], help='target device: rk1808, rk1126')
     parser.add_argument('--device', choices=['rk1808', 'rv1126'], help='device: rk1808, rv1126')
@@ -43,12 +44,15 @@ def parse_args(cmds=None):
     return parser.parse_args(cmds)
 
 class RknnPredictor():
-    def __init__(self, rknn):
+    def __init__(self, rknn, input_size=None):
         super(RknnPredictor, self).__init__()
         self.rknn = rknn
 
-        self.width = 192
+        self.width = 256
         self.height = 256
+        if input_size:
+            self.height, self.width = tuple(input_size)
+        print(self.height, self.width)
         self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)*255
         self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32)*255
         self.output_size = [self.height // 4, self.width//4]
@@ -60,6 +64,8 @@ class RknnPredictor():
         input_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         input_image = input_image.astype(np.float32)
 
+        # if with_normalize:
+        #     input_image = (input_image - self.mean) / self.std
         return [input_image]
 
     def farward(self, x):
@@ -128,11 +134,13 @@ def main(cmds=None):
     if rknn is None:
         exit(-1)
 
-    model = RknnPredictor(rknn)
+    model = RknnPredictor(rknn, input_size=args.input_size)
     # model = RknnPredictor(1)
     predictWrap(args.input, model, args)
     print("__________________exit__________________")
 
 if __name__ == "__main__":
     cmds = ['weights/coco_256x192_q.rknn', '--device', 'rk1808', '-i',  "data/abc*.jpg", '--show-img']
+    # cmds = ['weights/tmp/pose_resnet_50_256x256_q.rknn', '--device', 'rk1808', '-i',  "data/abc*.jpg", '--show-img']
+    cmds = ['weights/face300b_256x256_q.rknn', '--device', 'rk1808', '-i',  "data/faces/*.png", '--show-img']
     main(cmds)

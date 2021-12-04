@@ -26,7 +26,9 @@ python -m zalaiConvert.convert.onnx2rknn pose_resnet_50_256x256.onnx -o pose_res
 python -m zalaiConvert.convert.onnx2rknn abc.pth -o pose_resnet_50_256x256.rknn --framework torchscript --input-size-list  3 256 256 --dataset 1.txt
 
 python -m zalaiConvert.convert.onnx2rknn pose_resnet_50_256x256.onnx -o pose_resnet_50_256x256_q.rknn --framework onnx --do-quantization --dataset 1.txt
-
+```
+#### bench rknn
+``` 
 python -m zalaiConvert.farward.farward_tmc pose_resnet_50_256x256.rknn --device rk1808 
 
 python -m zalaiConvert.farward.farward_tmc pose_resnet_50_256x256_q.rknn --device rk1808 
@@ -108,6 +110,17 @@ class JointsDataset(Dataset):
 - 似乎没有使用pafs，没有描述点与点的关系（关节）的方法？
 - 虽然没有使用pafs，但是多了target_weight。
 - target中没有增加背景层。
+
+
+
+#### output
+- tf
+    - tflog
+- stdout
+  - stdout_rlog
+- output
+    - model_save 
+    - logger
 
 ### network
 网络结构一句话就可以表达清楚，就是一个普通的backbone（用resnet50就很好）加一些转置卷积层（作为一个head network）。作者认为这可能是得到heatmaps的最简单方式，并且包含了从深到浅的特征。

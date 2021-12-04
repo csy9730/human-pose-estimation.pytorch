@@ -94,8 +94,8 @@ class PosresPredictor(object):
     def __init__(self):
         self.width = 256 # 192
         self.height = 256
-        self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
-        self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+        self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)* 256
+        self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32)* 256
         self.output_size = [self.height // 4, self.width//4]
 
     def preprocess(self, img):

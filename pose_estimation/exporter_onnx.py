@@ -125,6 +125,8 @@ def modelFactory(model_path, config):
     for k,v in ckpt.items():
         if "module" in k:
             k = k[7:]# .lstrip('module\\.')
+        # if k in ["epoch", "model", "state_dict", "perf", "optimizer"]:
+        #     continue
         model_dict[k] = v
         
     model.load_state_dict(model_dict)
@@ -154,10 +156,6 @@ def main(cmds=None):
 if __name__ == '__main__':
     # cmds = ['--cfg', r'experiments\mpii\resnet50\256x256_d256x3_adam_lr1e-3.yaml', 
     # '--model-file', r'models/pytorch/pose_mpii/pose_resnet_50_256x256.pth.tar']
-    cmds = ['--cfg', r'experiments\coco\resnet50\256x192_d256x3_adam_lr1e-3.yaml', 
-    '--model-file', r'output\coco\pose_resnet_50\256x192_d256x3_adam_lr1e-3\model_best.pth.tar',
-    '-o', 'weights/coco_256x192.onnx']
-
     cmds = ['--cfg', r'experiments\face300w\256x256_d256x3_adam_lr1e-3_a.yaml', 
     '--model-file', r'output\CsvKptDataset\pose_resnet_50\256x256_d256x3_adam_lr1e-3_a\model_best.pth.tar',
     '--shape-list', '1', '3', '256', '256', '-o', 'weights/face300_256x256f.onnx']
